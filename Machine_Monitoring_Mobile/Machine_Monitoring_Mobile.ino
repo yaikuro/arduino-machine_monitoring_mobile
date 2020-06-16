@@ -9,13 +9,13 @@
 
 // LED
 const int ledRunning = 13;
-const int ledBreakdown = 26;
-const int ledRepair = 33;
-const int ledConfirm = 32;
+const int ledBreakdown = 14;
+const int ledRepair = 27;
+const int ledConfirm = 33;
 
 // Button
-const int btnBreakdown = 12;
-const int btnConfirm = 14;
+const int btnBreakdown = 26;
+const int btnConfirm = 25;
 
 // Button State
 int btnBreakdownState = 0;
@@ -67,7 +67,7 @@ void setup()
 void loop()
 {
   
-  String path = "/Machines/Line 1/PD1/machineStatus";
+  String path = "/Machines/Line 2/AS4/machineStatus";
 
   btnBreakdownState = digitalRead(btnBreakdown);
   btnConfirmState = digitalRead(btnConfirm);
