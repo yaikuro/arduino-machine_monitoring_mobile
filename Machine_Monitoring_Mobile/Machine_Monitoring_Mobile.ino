@@ -7,6 +7,19 @@
 #define WIFI_SSID ""
 #define WIFI_PASSWORD ""
 
+// LED
+const int ledRunning = 13;
+const int ledBreakdown = 26;
+const int ledRepair = 33;
+const int ledConfirm = 32;
+
+// Button
+const int btnBreakdown = 12;
+const int btnConfirm = 14;
+
+// Button State
+int btnBreakdownState = 0;
+int btnConfirmState = 0;
 
 //Define FirebaseESP32 data object
 FirebaseData firebaseData;
@@ -19,6 +32,14 @@ void setup()
 {
 
   Serial.begin(115200);
+
+  pinMode(ledRunning, OUTPUT);
+  pinMode(ledBreakdown, OUTPUT);
+  pinMode(ledRepair, OUTPUT);
+  pinMode(ledConfirm, OUTPUT);
+  
+  pinMode(btnBreakdown, INPUT);
+  pinMode(btnConfirm, INPUT);
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to Wi-Fi");
@@ -45,25 +66,46 @@ void setup()
 
 void loop()
 {
+  
+  String path = "/Machines/Line 1/PD1/machineStatus";
 
-  String path = "/Machines";
+  btnBreakdownState = digitalRead(btnBreakdown);
+  btnConfirmState = digitalRead(btnConfirm);
+  
+  Serial.println(btnBreakdownState);
+  Serial.println(btnConfirmState);
 
-  Serial.println();
-  Serial.println("--------------------------------------------------");
-  Serial.println("-------Getting Production Machines status...------");
-  Serial.println("--------------------------------------------------");
-  Serial.println();
-
-  for (uint8_t i = 1; i < 5; i++) {
-
-    if (Firebase.get(firebaseData, path + "/Line 1/PD" + i + "/machineStatus"))
+  if (Firebase.get(firebaseData, path))
     {
+      String machineStatus = firebaseData.stringData();
       Serial.println("PASSED");
       Serial.println("PATH: " + firebaseData.dataPath());
       Serial.print("STATUS: ");
-      printResult(firebaseData);
+      Serial.print(machineStatus);
       Serial.println("------------------------------------");
       Serial.println();
+
+      if (machineStatus == "1") {
+        digitalWrite(ledRunning, HIGH);
+        digitalWrite(ledBreakdown, LOW);
+        digitalWrite(ledRepair, LOW);
+        digitalWrite(ledConfirm, LOW);
+      } else if (machineStatus == "2") {
+        digitalWrite(ledRunning, LOW);
+        digitalWrite(ledBreakdown, HIGH);
+        digitalWrite(ledRepair, LOW);
+        digitalWrite(ledConfirm, LOW);
+      } else if (machineStatus == "3") {
+        digitalWrite(ledRunning, LOW);
+        digitalWrite(ledBreakdown, LOW);
+        digitalWrite(ledRepair, HIGH);
+        digitalWrite(ledConfirm, LOW);
+      } else if (machineStatus == "4") {
+        digitalWrite(ledRunning, LOW);
+        digitalWrite(ledBreakdown, LOW);
+        digitalWrite(ledRepair, LOW);
+        digitalWrite(ledConfirm, HIGH);
+      }
     }
     else
     {
@@ -72,36 +114,16 @@ void loop()
       Serial.println("------------------------------------");
       Serial.println();
     }
-  }
+      
+  if (btnBreakdownState == HIGH) {
+    Firebase.set(firebaseData, path, "2");
+  } 
 
-
-  Serial.println();
-  Serial.println("--------------------------------------------------");
-  Serial.println("--------Getting Assembly Machines status...-------");
-  Serial.println("--------------------------------------------------");
-  Serial.println();
-  
-  for (uint8_t i = 1; i < 5; i++) {
-
-    if (Firebase.get(firebaseData, path + "/Line 2/AS" + i + "/machineStatus"))
-    {
-      Serial.println("PASSED");
-      Serial.println("PATH: " + firebaseData.dataPath());
-      Serial.print("STATUS: ");
-      printResult(firebaseData);
-      Serial.println("------------------------------------");
-      Serial.println();
-    }
-    else
-    {
-      Serial.println("FAILED");
-      Serial.println("REASON: " + firebaseData.errorReason());
-      Serial.println("------------------------------------");
-      Serial.println();
-    }
+  if (btnConfirmState == HIGH) {
+    Firebase.set(firebaseData, path, "1");
   }
   
-  delay(10000);
+  delay(100);
   
 }  //End of void loop()
 
