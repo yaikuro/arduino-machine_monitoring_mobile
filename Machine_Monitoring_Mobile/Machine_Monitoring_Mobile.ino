@@ -1,11 +1,24 @@
 #include <WiFi.h>
 #include <FirebaseESP32.h>
-
+#include "time.h"
 
 #define FIREBASE_HOST ""
 #define FIREBASE_AUTH ""
 #define WIFI_SSID ""
 #define WIFI_PASSWORD ""
+
+// Firebase path
+String path = "/Machines/Line 1/PD1/";
+String machineStatusPath = path + "machineStatus";
+String machineBreakdownTime = path + "machineBreakdownTime";
+
+
+// Time
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 21600; // GMT +7
+const int   daylightOffset_sec = 3600;
+char currentTime[20];
+
 
 // LED
 const int ledRunning = 13;
@@ -62,12 +75,24 @@ void setup()
   //Size and its write timeout e.g. tiny (1s), small (10s), medium (30s) and large (60s).
   Firebase.setwriteSizeLimit(firebaseData, "tiny");
 
+  // Init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
 } //End of void setup()
+
 
 void loop()
 {
-  
-  String path = "/Machines/Line 2/AS4/machineStatus";
+
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  strftime(currentTime, sizeof(currentTime), "%d-%m-%Y %H:%M:%S", &timeinfo);
+  Serial.println(currentTime);
+  Serial.println();
+
 
   btnBreakdownState = digitalRead(btnBreakdown);
   btnConfirmState = digitalRead(btnConfirm);
@@ -75,7 +100,7 @@ void loop()
   Serial.println(btnBreakdownState);
   Serial.println(btnConfirmState);
 
-  if (Firebase.get(firebaseData, path))
+  if (Firebase.get(firebaseData, machineStatusPath))
     {
       String machineStatus = firebaseData.stringData();
       Serial.println("PASSED");
@@ -116,14 +141,15 @@ void loop()
     }
       
   if (btnBreakdownState == HIGH) {
-    Firebase.set(firebaseData, path, "2");
+    Firebase.set(firebaseData, machineStatusPath, "2");
+    Firebase.setString(firebaseData, machineBreakdownTime, currentTime);
   } 
 
   if (btnConfirmState == HIGH) {
-    Firebase.set(firebaseData, path, "1");
+    Firebase.set(firebaseData, machineStatusPath, "1");
   }
   
-  delay(100);
+  delay(200);
   
 }  //End of void loop()
 
